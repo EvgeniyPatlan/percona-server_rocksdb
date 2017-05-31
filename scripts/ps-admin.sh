@@ -204,6 +204,8 @@ do
     printf "  --disable-tokudb, -d\t\t\t disable TokuDB plugin and remove thp-setting=never option in my.cnf\n"
     printf "\t\t\t\t\t (this option includes --disable-tokubackup option)\n"
     printf "  --disable-tokubackup, -r\t\t disable Percona TokuBackup and remove preload-hotbackup option in my.cnf\n"
+    printf "  --enable-rocksdb, -k\t\t\t enable RocksDB plugin\n"
+    printf "  --disable-rocksdb, -o\t\t\t disable RocksDB plugin\n"
     printf "  --enable-qrt, -t\t\t\t enable Query Response Time plugin\n"
     printf "  --disable-qrt, -z\t\t\t disable Query Response Time plugin\n"
     printf "  --enable-audit, -a\t\t\t enable Audit Log plugin\n"
