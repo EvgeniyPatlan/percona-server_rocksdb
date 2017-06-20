@@ -1,5 +1,5 @@
---source include/have_rocksdb.inc
-
 select @@rocksdb_default_cf_options;
+@@rocksdb_default_cf_options
+compression_per_level=kLZ4HCCompression
 create table t (id int primary key) engine=rocksdb;
 drop table t;
