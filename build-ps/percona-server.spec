@@ -62,10 +62,12 @@
   %global TOKUDB_FLAGS -DWITH_VALGRIND=OFF -DUSE_VALGRIND=OFF -DDEBUG_EXTNAME=OFF -DBUILD_TESTING=OFF -DUSE_GTAGS=OFF -DUSE_CTAGS=OFF -DUSE_ETAGS=OFF -DUSE_CSCOPE=OFF -DTOKUDB_BACKUP_PLUGIN_VERSION=%{tokudb_backup_version}
   %global TOKUDB_DEBUG_ON -DTOKU_DEBUG_PARANOID=ON
   %global TOKUDB_DEBUG_OFF -DTOKU_DEBUG_PARANOID=OFF
+  %global ROCKSDB_FLAGS -DWITH_ROCKSDB=1
 %else
   %global TOKUDB_FLAGS -DWITHOUT_TOKUDB=1
   %global TOKUDB_DEBUG_ON %{nil}
   %global TOKUDB_DEBUG_OFF %{nil}
+  %global ROCKSDB_FLAGS -DWITH_ROCKSDB=0
 %endif
 
 # On rhel 5/6 we still have renamed library to libperconaserverclient
@@ -298,6 +300,16 @@ Provides:       tokudb-plugin = %{version}-%{release}
 
 %description -n Percona-Server-tokudb%{product_suffix}
 This package contains the TokuDB plugin for Percona Server %{version}-%{release}
+
+%package -n Percona-Server-rocksdb%{product_suffix}
+Summary:        Percona Server - RocksDB package
+Group:          Applications/Databases
+Requires:       Percona-Server-server%{product_suffix} = %{version}-%{release}
+Requires:       Percona-Server-shared%{product_suffix} = %{version}-%{release}
+Requires:       Percona-Server-client%{product_suffix} = %{version}-%{release}
+
+%description -n Percona-Server-rocksdb%{product_suffix}
+This package contains the RocksDB plugin for Percona Server %{version}-%{release}
 %endif
 
 %prep
@@ -357,12 +369,13 @@ mkdir debug
            -DWITH_EMBEDDED_SERVER=0 \
            -DWITH_EMBEDDED_SHARED_LIBRARY=0 \
            -DWITH_PAM=1 \
+           -DWITH_ROCKSDB=1 \
            -DWITH_INNODB_MEMCACHED=1 \
            -DWITH_ZLIB=system \
            -DWITH_SCALABILITY_METRICS=ON \
            %{?ssl_option} \
            %{?mecab_option} \
-           -DCOMPILATION_COMMENT="%{compilation_comment_debug}" %{TOKUDB_FLAGS} %{TOKUDB_DEBUG_OFF}
+           -DCOMPILATION_COMMENT="%{compilation_comment_debug}" %{TOKUDB_FLAGS} %{TOKUDB_DEBUG_OFF} %{ROCKSDB_FLAGS}
   echo BEGIN_DEBUG_CONFIG ; egrep '^#define' include/config.h ; echo END_DEBUG_CONFIG
   make %{?_smp_mflags} VERBOSE=1
 )
@@ -392,12 +405,13 @@ mkdir release
            -DWITH_EMBEDDED_SERVER=0 \
            -DWITH_EMBEDDED_SHARED_LIBRARY=0 \
            -DWITH_PAM=1 \
+           -DWITH_ROCKSDB=1 \
            -DWITH_INNODB_MEMCACHED=1 \
            -DWITH_ZLIB=system \
            -DWITH_SCALABILITY_METRICS=ON \
            %{?ssl_option} \
            %{?mecab_option} \
-           -DCOMPILATION_COMMENT="%{compilation_comment_release}" %{TOKUDB_FLAGS} %{TOKUDB_DEBUG_OFF}
+           -DCOMPILATION_COMMENT="%{compilation_comment_release}" %{TOKUDB_FLAGS} %{TOKUDB_DEBUG_OFF} %{ROCKSDB_FLAGS}
   echo BEGIN_NORMAL_CONFIG ; egrep '^#define' include/config.h ; echo END_NORMAL_CONFIG
   make %{?_smp_mflags} VERBOSE=1
 )
@@ -588,9 +602,16 @@ done
 if [ $1 -eq 1 ] ; then
   echo -e "\n\n * This release of Percona Server is distributed with TokuDB storage engine."
   echo -e " * Run the following script to enable the TokuDB storage engine in Percona Server:\n"
-  echo -e "\tps_tokudb_admin --enable -u <mysql_admin_user> -p[mysql_admin_pass] [-S <socket>] [-h <host> -P <port>]\n"
+  echo -e "\tps-admin --enable-tokudb -u <mysql_admin_user> -p[mysql_admin_pass] [-S <socket>] [-h <host> -P <port>]\n"
   echo -e " * See http://www.percona.com/doc/percona-server/5.7/tokudb/tokudb_installation.html for more installation details\n"
   echo -e " * See http://www.percona.com/doc/percona-server/5.7/tokudb/tokudb_intro.html for an introduction to TokuDB\n\n"
+fi
+
+%post -n Percona-Server-rocksdb%{product_suffix}
+if [ $1 -eq 1 ] ; then
+  echo -e "\n\n * This release of Percona Server is distributed with RocksDB storage engine."
+  echo -e " * Run the following script to enable the RocksDB storage engine in Percona Server:\n"
+  echo -e "\tps-admin --enable-rocksdb -u <mysql_admin_user> -p[mysql_admin_pass] [-S <socket>] [-h <host> -P <port>]\n"
 fi
 %endif
 
@@ -653,6 +674,7 @@ fi
 %attr(755, root, root) %{_bindir}/mysql_ssl_rsa_setup
 %attr(755, root, root) %{_bindir}/lz4_decompress
 %attr(755, root, root) %{_bindir}/zlib_decompress
+%attr(755, root, root) %{_bindir}/ps-admin
 %if 0%{?systemd}
 %attr(755, root, root) %{_bindir}/mysqld_pre_systemd
 %else
@@ -928,7 +950,16 @@ fi
 %attr(755, root, root) %{_libdir}/mysql/plugin/debug/tokudb_backup.so
 %attr(755, root, root) %{_libdir}/mysql/libHotBackup.so
 %{_includedir}/backup.h
+
+%files -n Percona-Server-rocksdb%{product_suffix}
+%attr(-, root, root)
+%{_libdir}/mysql/plugin/ha_rocksdb.so
+%attr(755, root, root) %{_libdir}/mysql/plugin/debug/ha_rocksdb.so
+%attr(755, root, root) %{_bindir}/ldb
+%attr(755, root, root) %{_bindir}/mysql_ldb
+%attr(755, root, root) %{_bindir}/sst_dump
 %endif
+
 
 %changelog
 * Thu Sep  1 2016 Evgeniy Patlan <evgeniy.patlan@percona.com> 
